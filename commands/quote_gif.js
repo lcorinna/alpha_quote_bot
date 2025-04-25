@@ -39,5 +39,5 @@ module.exports = (sendAsFile = false) => {
     });
   };
 
-  incrementStats(ctx.chat.id);
+  incrementStats(ctx);
 };

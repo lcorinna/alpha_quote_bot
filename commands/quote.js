@@ -40,5 +40,5 @@ module.exports = async (ctx) => {
     console.warn('Не удалось удалить сообщение с командой:', e.message);
   }
 
-  incrementStats(ctx.chat.id);
+  incrementStats(ctx);
 };
