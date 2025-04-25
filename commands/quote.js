@@ -1,12 +1,9 @@
 const { getUserAvatar } = require('../helpers/getAvatar');
 const { translitPreserveEmoji } = require('../helpers/translit');
-const { filterSupportedChars } = require('../helpers/filterSupportedChars');
 const { generateImage } = require('../render/generateImage');
 
 module.exports = async (ctx) => {
   const reply = ctx.message.reply_to_message;
-
-  // console.log(ctx, '\n\n\n')
 
   if (!reply) {
     return ctx.reply(
