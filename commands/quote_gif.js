@@ -2,6 +2,7 @@ const { getUserAvatar } = require('../helpers/getAvatar');
 const { translitPreserveEmoji } = require('../helpers/translit');
 const { generateGif } = require('../render/generateGif');
 const gifQueue = require('../helpers/queue');
+const { incrementStats } = require('../helpers/stats');
 
 module.exports = (sendAsFile = false) => {
   return async (ctx) => {
@@ -37,4 +38,6 @@ module.exports = (sendAsFile = false) => {
       ctx.reply('Произошла ошибка при генерации гифки 😢');
     });
   };
+
+  incrementStats(ctx.chat.id);
 };

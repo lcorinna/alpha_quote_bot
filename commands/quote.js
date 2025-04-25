@@ -1,6 +1,7 @@
 const { getUserAvatar } = require('../helpers/getAvatar');
 const { translitPreserveEmoji } = require('../helpers/translit');
 const { generateImage } = require('../render/generateImage');
+const { incrementStats } = require('../helpers/stats');
 
 module.exports = async (ctx) => {
   const reply = ctx.message.reply_to_message;
@@ -38,4 +39,6 @@ module.exports = async (ctx) => {
   } catch (e) {
     console.warn('Не удалось удалить сообщение с командой:', e.message);
   }
+
+  incrementStats(ctx.chat.id);
 };
