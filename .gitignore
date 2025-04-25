@@ -1,0 +1,5 @@
+node_modules/
+.env
+assets/avatar.jpg
+assets/result.jpg
+assets/quote.gif

@@ -1,0 +1,31 @@
+{
+  "__note": "https://chatgpt.com/c/680a5c7f-6e7c-8002-86f9-1e2f9fd21789",
+  "name": "alpha_quote_bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "funny",
+    "meme"
+  ],
+  "author": {
+    "name": "Gaydaychuk Dmitry",
+    "email": "Gaida95@yandex.ru",
+    "url": "https://t.me/Gaydaychuk"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.9.0",
+    "canvas": "^3.1.0",
+    "dotenv": "^16.5.0",
+    "gifencoder": "^2.0.1",
+    "p-queue": "^6.6.2",
+    "telegraf": "^4.16.3",
+    "transliteration": "^2.3.5"
+  }
+}
