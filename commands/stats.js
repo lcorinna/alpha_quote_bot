@@ -6,6 +6,6 @@ module.exports = async (ctx) => {
 
   const stats = loadStats();
   await ctx.reply(
-    `📊 Статистика:\n\nСработал: ${stats.triggerCount} раз\nЧатов: ${stats.chats.length}`
+    `📊 Статистика:\n\nСработал: ${stats.triggerCount} раз\nЧатов: ${Object.keys(stats.chats).length}`
   );
 };

@@ -1,19 +1,27 @@
 const path = require('path');
-const { loadImage } = require('canvas');
+const { loadImage } = require('@napi-rs/canvas');
 
-// Случайный фон
-async function getRandomBackground() {
-  const bgIndex = Math.floor(Math.random() * 5) + 1;
-  const bgPath = path.join(__dirname, `../assets/quote${bgIndex}.jpg`);
-  return await loadImage(bgPath);
+const BG_COUNT = 5;
+let cachedBackgrounds = null;
+
+async function loadBackgrounds() {
+  if (cachedBackgrounds) return cachedBackgrounds;
+  cachedBackgrounds = await Promise.all(
+    Array.from({ length: BG_COUNT }, (_, i) =>
+      loadImage(path.join(__dirname, `../assets/quote${i + 1}.jpg`))
+    )
+  );
+  return cachedBackgrounds;
 }
 
-// Отрисовка аватара
-async function drawAvatar(ctx, avatarPath) {
-  if (!avatarPath) return;
+async function getRandomBackground() {
+  const backgrounds = await loadBackgrounds();
+  return backgrounds[Math.floor(Math.random() * backgrounds.length)];
+}
 
-  const avatar = await loadImage(avatarPath);
-  const size = 360;
+function drawAvatar(ctx, avatarImage, size = 360) {
+  if (!avatarImage) return;
+
   const x = 100;
   const y = 100;
 
@@ -23,11 +31,8 @@ async function drawAvatar(ctx, avatarPath) {
   ctx.clip();
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(avatar, x, y, size, size);
+  ctx.drawImage(avatarImage, x, y, size, size);
   ctx.restore();
 }
 
-module.exports = {
-  getRandomBackground,
-  drawAvatar,
-};
+module.exports = { getRandomBackground, drawAvatar };

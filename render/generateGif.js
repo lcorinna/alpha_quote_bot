@@ -1,69 +1,117 @@
+require('../helpers/fonts');
 const path = require('path');
 const fs = require('fs');
-const { createCanvas, loadImage, registerFont } = require('canvas');
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const GIFEncoder = require('gifencoder');
-const { wrapText } = require('../helpers/wrapText');
 const { getRandomBackground, drawAvatar } = require('../helpers/canvasUtils');
+const { randomUUID } = require('crypto');
 
-// Шрифты
-registerFont(path.join(__dirname, '../assets/fonts/Pauls_Ransom_Note.ttf'), {
-  family: 'Pauls Ransom Note'
-});
-registerFont(path.join(__dirname, '../assets/fonts/GreatVibes-Regular.ttf'), {
-  family: 'Great Vibes'
-});
+const WIDTH = 1280;
+const HEIGHT = 720;
+const TOTAL_FRAMES = 12;
+const FRAME_DELAY = 250;
+const LAST_FRAME_DELAY = 1500;
+const AVATAR_SIZE = 260;
+const TEXT_X = 100;
+const TEXT_Y = 380;
+const TEXT_MAX_WIDTH = 950;
+const TEXT_MAX_Y = HEIGHT - 90;
 
-// Сниженное разрешение
-const width = 1280;
-const height = 720; 
+function calcLines(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words) {
+    const test = line ? `${line} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function fitText(ctx, text, maxWidth, availHeight, fontFamily, startSize) {
+  for (let size = startSize; size >= 24; size -= 4) {
+    ctx.font = `${size}px "${fontFamily}"`;
+    const lh = Math.ceil(size * 1.2);
+    const lines = calcLines(ctx, text, maxWidth);
+    if (lines.length * lh <= availHeight) return { size, lh, lines };
+  }
+  const size = 24;
+  ctx.font = `${size}px "${fontFamily}"`;
+  return { size, lh: Math.ceil(size * 1.2), lines: calcLines(ctx, text, maxWidth) };
+}
 
 async function generateGif(text, author, avatarPath, isTrimmed) {
-  const encoder = new GIFEncoder(width, height);
-  const filePath = path.join(__dirname, '../assets/quote.gif');
+  const filePath = path.join(__dirname, `../assets/quote-${randomUUID()}.gif`);
+  const encoder = new GIFEncoder(WIDTH, HEIGHT);
   const stream = fs.createWriteStream(filePath);
 
   encoder.createReadStream().pipe(stream);
   encoder.start();
   encoder.setRepeat(0);
-  encoder.setTransparent('#000');           // помогает Telegram не перекодировать
-  encoder.setQuality(10);                   // хорошее качество, сбалансированное
-  const totalFrames = 12;
-  const baseDelay = 250;                    // 250 * 11 + 1500 = 4.25 сек
+  encoder.setQuality(3);
 
-  const canvas = createCanvas(width, height);
+  const canvas = createCanvas(WIDTH, HEIGHT);
   const ctx = canvas.getContext('2d');
   const bg = await getRandomBackground();
+  const avatarImage = await loadImage(avatarPath);
 
   const fullText = `"${text}${isTrimmed ? '...' : ''}"`;
 
-  for (let i = 0; i < totalFrames; i++) {
-    const isLast = i === totalFrames - 1;
-    encoder.setDelay(isLast ? 1500 : baseDelay);
+  // Рассчитываем размер шрифта один раз для всех кадров
+  ctx.textBaseline = 'top';
+  const { size: textSize, lh: textLh } = fitText(
+    ctx, fullText, TEXT_MAX_WIDTH, TEXT_MAX_Y - TEXT_Y, 'Pauls Ransom Note', 62
+  );
 
-    // Очистка
-    ctx.clearRect(0, 0, width, height);
+  for (let i = 0; i < TOTAL_FRAMES; i++) {
+    const isLast = i === TOTAL_FRAMES - 1;
+    encoder.setDelay(isLast ? LAST_FRAME_DELAY : FRAME_DELAY);
 
-    // Фон
+    ctx.clearRect(0, 0, WIDTH, HEIGHT);
     ctx.globalAlpha = 1;
-    ctx.drawImage(bg, 0, 0, width, height);
+    ctx.drawImage(bg, 0, 0, WIDTH, HEIGHT);
 
-    // Аватар
-    await drawAvatar(ctx, avatarPath);
+    drawAvatar(ctx, avatarImage, AVATAR_SIZE);
 
-    // Цитата по буквам
-    const visibleText = fullText.slice(0, Math.ceil((fullText.length / totalFrames) * (i + 1)));
+    const gradient = ctx.createLinearGradient(0, 240, 0, HEIGHT);
+    gradient.addColorStop(0, 'rgba(0,0,0,0)');
+    gradient.addColorStop(0.5, 'rgba(0,0,0,0.5)');
+    gradient.addColorStop(1, 'rgba(0,0,0,0.75)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 240, WIDTH, HEIGHT - 240);
+
+    const visibleText = fullText.slice(0, Math.ceil((fullText.length / TOTAL_FRAMES) * (i + 1)));
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 5;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    ctx.fillStyle = '#ffffff';
+    ctx.textBaseline = 'top';
+
     if (visibleText.trim().length > 0) {
-      ctx.font = 'bold 72px "Pauls Ransom Note"';
-      ctx.fillStyle = '#ffffff';
-      ctx.textBaseline = 'top';
-      wrapText(ctx, visibleText, 100, 500, 1080, 90);
+      ctx.font = `${textSize}px "Pauls Ransom Note"`;
+      const visLines = calcLines(ctx, visibleText, TEXT_MAX_WIDTH);
+      let y = TEXT_Y;
+      for (const line of visLines) {
+        ctx.fillText(line, TEXT_X, y);
+        y += textLh;
+      }
     }
 
-    // Автор
     ctx.font = '52px "Great Vibes"';
     const authorText = `— ${author}`;
     const authorWidth = ctx.measureText(authorText).width;
-    ctx.fillText(authorText, width - authorWidth - 100, height - 80);
+    ctx.fillText(authorText, WIDTH - authorWidth - 100, HEIGHT - 80);
+
+    ctx.restore();
 
     encoder.addFrame(ctx);
   }

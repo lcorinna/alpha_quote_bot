@@ -1,4 +1,12 @@
-require('dotenv').config(); 
+// Подавляем DEP0040 — устаревший punycode внутри telegraf, не наш код
+const _emitWarning = process.emitWarning;
+process.emitWarning = (warning, ...args) => {
+  const code = args[0]?.code ?? (typeof args[0] === 'string' ? args[0] : '');
+  if (code === 'DEP0040' || String(warning).includes('punycode')) return;
+  return _emitWarning.call(process, warning, ...args);
+};
+
+require('dotenv').config();
 const { Telegraf } = require('telegraf');
 const startCommand = require('./commands/start');
 const quoteCommand = require('./commands/quote');

@@ -1,4 +1,4 @@
 const PQueue = require('p-queue').default;
-const gifQueue = new PQueue({ concurrency: 2 }); // или больше, если уверенно работает
+const gifQueue = new PQueue({ concurrency: 1 });
 
 module.exports = gifQueue;
